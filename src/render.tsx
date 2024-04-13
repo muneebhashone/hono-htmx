@@ -1,14 +1,14 @@
 import type { FC } from "hono/jsx";
 
 export interface IPost {
-  id: string;
+  id?: number;
   title: string;
   description: string;
 }
 
 export const Post: FC<{ post: IPost }> = ({ post }) => {
   return (
-    <li class="shadow-sm my-2 p-4 rounded-md border border-slate-200">
+    <li class="shadow-sm my-2 p-4 rounded-md border border-slate-200 w-1/4">
       <h2>
         <span class="text-xs text-slate-600 mr-2">TITLE:</span>
         {post.title}
@@ -64,7 +64,7 @@ export const Top: FC<{ posts: IPost[] }> = ({ posts }) => {
         />
         <button type="submit">Post</button>
       </form>
-      <ul class="post-list flex gap-2">
+      <ul class="post-list flex gap-2 w-screen flex-wrap">
         {posts.map((post) => {
           return <Post post={post} />;
         })}

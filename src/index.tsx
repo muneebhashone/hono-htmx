@@ -4,6 +4,7 @@ import { Hono } from "hono";
 import { renderToReadableStream } from "hono/jsx/streaming";
 import { IPost, Post, Top } from "./render";
 import { z } from "zod";
+import { prisma } from "./lib/db";
 
 const postSchema = z.object({
   title: z.string({ required_error: "Title is required" }).min(2),
@@ -20,18 +21,12 @@ app.use(
   })
 );
 
-let posts: IPost[] = [
-  {
-    id: crypto.randomUUID(),
-    title: "Hello",
-    description: "World",
-  },
-];
-
 const port = 3000;
 console.log(`Server is running on port http://localhost:${port}`);
 
-app.get("/", (c) => {
+app.get("/", async (c) => {
+  const posts = await prisma.post.findMany();
+
   const streamableHTML = renderToReadableStream(<Top posts={posts} />);
 
   return c.body(streamableHTML, {
@@ -42,9 +37,10 @@ app.get("/", (c) => {
   });
 });
 
-app.delete("/post/:id", (c) => {
+app.delete("/post/:id", async (c) => {
   const id = c.req.param("id");
-  posts = posts.filter((post) => post.id !== id);
+
+  await prisma.post.delete({ where: { id: Number(id) } });
 
   return c.newResponse("", { status: 200 });
 });
@@ -57,7 +53,6 @@ app.post("/post", async (c) => {
   const data = Object.fromEntries(Array.from(await c.req.formData()));
 
   const post: IPost = {
-    id: crypto.randomUUID(),
     title: String(data["title"]),
     description: String(data["title"]),
   };
@@ -66,9 +61,11 @@ app.post("/post", async (c) => {
     return c.newResponse("Invalid data", { status: 422 });
   }
 
-  posts.push(post);
+  const postCreated = await prisma.post.create({
+    data: { title: post.title, description: post.description },
+  });
 
-  return c.html(<Post post={post} />);
+  return c.html(<Post post={postCreated} />);
 });
 
 serve({
